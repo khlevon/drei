@@ -1,5 +1,5 @@
-import React, { Children, createElement, forwardRef, useMemo, useLayoutEffect, useState } from 'react'
-import { Text as TextMeshImpl } from 'r3f-troika'
+import React from 'react'
+import { Text as TextMeshImpl } from 'troika-three-text'
 import { ReactThreeFiber, useThree } from 'react-three-fiber'
 
 type Props = JSX.IntrinsicElements['mesh'] & {
@@ -15,54 +15,54 @@ type Props = JSX.IntrinsicElements['mesh'] & {
   anchorY?: number | 'top' | 'top-baseline' | 'middle' | 'bottom-baseline' | 'bottom'
   clipRect?: [number, number, number, number]
   depthOffset?: number
+  direction?: 'auto' | 'ltr' | 'rtl'
   overflowWrap?: 'normal' | 'break-word'
   whiteSpace?: 'normal' | 'overflowWrap' | 'overflowWrap'
+  outlineWidth?: number | string
+  outlineOffsetX?: number | string
+  outlineOffsetY?: number | string
+  outlineBlur?: number | string
+  outlineColor?: ReactThreeFiber.Color
+  outlineOpacity?: number
+  strokeWidth?: number | string
+  strokeColor?: ReactThreeFiber.Color
+  strokeOpacity?: number
+  fillOpacity?: number
+  debugSDF?: boolean
   onSync?: (troika: TextMeshImpl) => void
 }
 
-export const Text = forwardRef(({ anchorX = 'center', anchorY = 'middle', children, onSync, ...props }: Props, ref) => {
-  const { invalidate } = useThree()
-  const [troikaMesh] = useState(() => new TextMeshImpl())
-  const [baseMtl, setBaseMtl] = useState()
-  const [nodes, text] = useMemo(() => {
-    let n: React.ReactNode[] = []
-    let t = ''
-    Children.forEach(children, (child, index) => {
-      if (typeof child === 'string') {
-        t += child
-      } else if (child && typeof child === 'object' && (child as React.ReactElement).props.attach === 'material') {
-        // Instantiate the base material and grab a reference to it, but don't assign any
-        // props, and assign it as the `material`, which Troika will replace behind the scenes.
-        n.push(createElement((child as React.ReactElement).type, { ref: setBaseMtl, attach: 'material', key: index }))
-        // Once the base material has been assigned, grab the resulting upgraded material,
-        // and apply the original material props to that.
-        if (baseMtl) {
-          n.push(
-            <primitive
-              dispose={null}
-              object={troikaMesh.material}
-              {...(child as React.ReactElement).props}
-              key={`baseMtl:${index}`}
-              attach={null}
-            />
-          )
+// eslint-disable-next-line prettier/prettier
+export const Text = React.forwardRef(
+  ({ anchorX = 'center', anchorY = 'middle', children, onSync, ...props }: Props, ref) => {
+    const { invalidate } = useThree()
+    const [troikaMesh] = React.useState(() => new TextMeshImpl())
+    const [nodes, text] = React.useMemo(() => {
+      let n: React.ReactNode[] = []
+      let t = ''
+      React.Children.forEach(children, (child) => {
+        if (typeof child === 'string' || typeof child === 'number') {
+          t += child
+        } else {
+          n.push(child)
         }
-      } else {
-        n.push(child)
-      }
-    })
-    return [n, t]
-  }, [children, baseMtl, troikaMesh.material])
-  useLayoutEffect(
-    () =>
-      void troikaMesh.sync(() => {
-        invalidate()
-        if (onSync) onSync(troikaMesh)
       })
-  )
-  return (
-    <primitive dispose={null} object={troikaMesh} ref={ref} text={text} anchorX={anchorX} anchorY={anchorY} {...props}>
-      {nodes}
-    </primitive>
-  )
-})
+      return [n, t]
+    }, [children])
+    React.useLayoutEffect(
+      () =>
+        void troikaMesh.sync(() => {
+          invalidate()
+          if (onSync) onSync(troikaMesh)
+        })
+    )
+    React.useEffect(() => {
+      return () => troikaMesh.dispose()
+    }, [troikaMesh])
+    return (
+      <primitive object={troikaMesh} ref={ref} text={text} anchorX={anchorX} anchorY={anchorY} {...props}>
+        {nodes}
+      </primitive>
+    )
+  }
+)
