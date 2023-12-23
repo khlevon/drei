@@ -4,6 +4,7 @@ import { ReactThreeFiber, useThree } from 'react-three-fiber'
 
 type Props = JSX.IntrinsicElements['mesh'] & {
   children: React.ReactNode
+  characters?: string
   color?: ReactThreeFiber.Color
   fontSize?: number
   maxWidth?: number
@@ -49,15 +50,21 @@ export const Text = React.forwardRef(
       })
       return [n, t]
     }, [children])
-    React.useLayoutEffect(
-      () =>
-        void troikaMesh.sync(() => {
-          invalidate()
-          if (onSync) onSync(troikaMesh)
-        })
-    )
+
+    React.useLayoutEffect(() => {
+      troikaMesh.sync(() => {
+        invalidate()
+        if (onSync) onSync(troikaMesh)
+      })
+    })
+
     React.useEffect(() => {
-      return () => troikaMesh.dispose()
+      return () => {
+        console.log('log: try: run: troikaMesh.dispose')
+        if (!troikaMesh.dispose) return
+        console.log('log: run: troikaMesh.dispose')
+        troikaMesh.dispose()
+      }
     }, [troikaMesh])
     return (
       <primitive object={troikaMesh} ref={ref} text={text} anchorX={anchorX} anchorY={anchorY} {...props}>
